@@ -1,0 +1,65 @@
+---
+// component imports
+import Link from "../components/Link.astro";
+import MainLayout from "../layouts/MainLayout.astro";
+---
+
+<MainLayout title="About" description="My About Page">
+  <section class="container about" aria-label="About Me">
+    <!-- <img
+      src="/images/headshot.jpg"
+      alt="My headshot"
+      width="200"
+      height="330"
+    /> -->
+    <div class="content">
+      <h1 class="h1">My Blog</h1>
+        <p>
+          I'm a junior trader and a self taught developer from France. 
+        </p> 
+        <p>I graduated from University Paris 1 Pantheon Sorbonne</p>
+        <p>My favorite tools are: Python, Neovim and C++</p>
+
+
+        <p>
+          I'm on <a href="https://github.com/paulbqnt">Github</a>,
+          <a href="https://www.youtube.com/@zalman7175/featured">Youtube</a>
+          and <a href="https://www.linkedin.com/in/paulboquant/">LinkedIn</a>. 
+        </p> 
+
+        
+        
+        
+        <div></div>
+        
+        
+
+<div>
+  <Link
+  href="mailto:paul@boquant.net"
+  style="primary"
+  text="Contact Me"
+ />
+ 
+ <Link
+ href="../../public/files/PAUL_BOQUANT_RESUME.pdf"
+ style="primary"
+ text="Résumé"
+ target="_blank"
+ rel="noopener noreferrer"
+/>
+
+</div>
+
+
+
+
+    
+
+
+
+
+
+    </div>
+  </section>
+</MainLayout>

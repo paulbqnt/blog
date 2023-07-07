@@ -1,0 +1,432 @@
+---
+layout: "../../layouts/BlogPostLayout.astro"
+title: Hiram, Option Pricing Library
+date: 2022-11-20
+author: Paul Boquant
+image: {
+  src: "/images/post-3.jpg",
+  alt: "A picture of a laptop with code on it",
+}
+description: Use case of my Option Pricing Library (Pricing, Delta Hedging and Greeks analysis)
+draft: false
+category: Quant Finance
+---
+import Latex from "../../components/Latex.astro";
+
+{/* <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+ <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script> */}
+
+
+## Hiram
+
+Hiram is a free financial library built in Python that can be used for option pricing and financial instruments management. 
+
+
+I started to think about this project while I was studying Option Pricing at University Panthéon-Sorbonne. I quickly realised how difficult it could be to improve intuition regarding pricing and greeks. My goal with **Hiram** is to:
+1. Improve my intuition about options and greeks
+2. Show how easy to use Python is
+3. Show far I could go in the modeling of financial products.
+
+The code below is the first showcase of my library. You can find the [Jupyter Notebook](https://github.com/paulbqnt/hiram/blob/main/example-1.ipynb) on github.
+Before the creation of that blog post I shared the [notebook](https://www.linkedin.com/feed/update/urn:li:activity:7072501608890167296/) on LinkedIn. 
+
+# Table of contents
+1. [Option Creation and Pricing](#1)
+2. [Greeks](#2)
+3. [Stock Creation](#3)
+4. [Portfolio Creation](#4)
+5. [Portfolio Greeks](#5)
+6. [Delta Hedging of the Portfolio](#6)
+7. [Market Maker Example](#7)
+8. [Delta Hedging](#8)
+
+
+
+
+
+### 1. Option Creation and Pricing <a name="1"></a>
+
+```python
+from option import BlackScholes, Way_option
+example_call = BlackScholes(way=Way_option.call, S=100, K=105, T=1, r=0.05, sigma=0.3, )
+example_call.dict() #Pydantic BaseModel function, makes the output easier to read
+```
+
+```python
+# Output
+{'S': 100.0,
+ 'K': 105.0,
+ 'T': 1.0,
+ 'r': 0.05,
+ 'sigma': 0.3,
+ 'way': <Way_option.call: 'call'>,
+ 'stock': None,
+ 'quantity': 1,
+ 'price': 1,
+ 'id_': UUID('ad45fecd-e22c-4071-9e28-64799e7fbf78')}
+```
+
+### 2. Greeks <a name="2"></a>
+
+#### Delta
+
+<Latex formula='{\displaystyle \Delta ={\frac {\partial V}{\partial S}}}'/>
+
+Delta 0.53 or 53%. For 1€ rise (fall) in the spot price the value of the long call position will increase (decrease) by about 0.53€. S (spot) and V (option value) move in the same direction.
+
+
+
+
+```python
+example_call.delta()
+```
+```python
+# Output
+0.5338376178017635
+```
+
+#### Gamma
+
+<Latex formula='\displaystyle \Gamma ={\frac {\partial \Delta }{\partial S}}={\frac {\partial ^{2}V}{\partial S^{2}}}'/>
+
+```python
+example_call.gamma()
+```
+
+```python
+# Output
+0.013141252320879648
+```
+
+
+#### Vega
+
+<Latex formula='\displaystyle \mathcal{V}  ={\frac {\partial \Delta }{\partial S}}={\frac {\partial ^{2}V}{\partial S^{2}}}'/>
+
+Vega 0.39, if volatility rises (fall) by 1%, the value of the long call will increase (decrease) by about 0.39€.
+
+```python
+example_call.gamma()
+```
+
+```python
+# Output
+0.013141252320879648
+```
+
+
+#### Rho
+
+<Latex formula='{\displaystyle \rho ={\frac {\partial V}{\partial r}}}'/>
+
+Rho 0.44. If interest rates rise (fall) by 1%, the value of the long call position will increase (decrease) by about 0.44€.
+
+```python
+example_call.rho()
+```
+
+```python
+# Output
+0.44143924313138455
+```
+
+
+#### Theta
+
+<Latex formula='{\displaystyle \Theta =-{\frac {\partial V}{\partial \tau }}}'/>
+
+Theta -0.22. Each day, the value of the option will fall by about 0.22€. Negative relationship
+
+```python
+example_call.theta()
+```
+
+```python
+# Output
+-0.02224865687685689
+```
+
+#### Compute all
+```python
+example_call.compute_all()
+```
+
+```python
+# Output
+value: 11.976881462184025, delta: 0.5338376178017635, gamma: 0.013141252320879648,
+vega: 0.3942375696263895, rho: 0.44143924313138455, theta: -0.02224865687685689'
+```
+
+### 3. Stock Creation <a name="3"></a>
+
+
+
+```python
+from stock import Stock, Way_stock
+
+example_stock = Stock(ticker="AAPL")
+
+print(f"stock ticker:\t{example_stock.ticker}")
+print(f"stock price:\t{example_stock.price}")
+print(f"stock way:\t{example_stock.way}")
+example_stock.hist.tail()
+```
+
+```markdown
+# output
+stock ticker:	AAPL
+stock price:	191.3300018310547
+stock way:	Way_stock.long
+|        |            | dividends  | dividends  | dividends  | dividends  | dividends | dividends  | dividends | splits |
+|--------|------------|------------|------------|------------|------------|-----------|------------|-----------|--------|
+| symbol | date       |            |            |            |            |           |            |           |        |
+| AAPL   | 2023-06-28 | 187.929993 | 189.899994 | 187.600006 | 189.250000 | 51216800  | 189.250000 | 0.0       | 0.0    |
+|        | 2023-06-29 | 189.080002 | 190.070007 | 188.940002 | 189.589996 | 46347300  | 189.589996 | 0.0       | 0.0    |
+|        | 2023-06-30 | 191.630005 | 194.479996 | 191.259995 | 193.970001 | 85069600  | 193.970001 | 0.0       | 0.0    |
+|        | 2023-07-03 | 193.779999 | 193.880005 | 191.759995 | 192.460007 | 31458200  | 192.460007 | 0.0       | 0.0    |
+|        | 2023-07-05 | 191.570007 | 192.979996 | 190.619995 | 191.330002 | 46920300  | 191.330002 | 0.0       | 0.0    |
+```
+As you can see, the output is pretty awful. (don't hesitate if you know a better way to render dataframes on mdx files)
+
+
+
+```python
+# Output
+stock ticker:	AAPL
+stock price:	180.08999633789062
+stock way:	Way_stock.long
+
+TABLE TO ADD
+```
+
+#### Linkage to the call option
+
+```python
+example_call.stock = example_stock
+```
+
+```python
+# Let's check
+example_call.stock.ticker
+```
+
+```python
+# Output
+'AAPL'
+```
+
+```python
+# Modification of S/K
+example_call.S = example_stock.price
+example_call.K = example_stock.price * 1.25
+
+print(f"Spot:\t{example_call.S}")
+print(f"Strike:\t{example_call.K}")
+```
+
+```python
+# Output
+Spot:	180.08999633789062
+Strike:	225.11249542236328
+```
+
+```python
+# compute all the greeks
+example_call.compute_all()
+```
+
+```python
+# Output
+value: 10.249865700985907, delta: 0.3183163677151672, gamma: 0.006740312884853831,
+vega: 0.6558137079380103, rho: 0.500148738240813, theta: -0.03380260085006635'
+```
+
+### 4. Portfolio Creation <a name="4"></a>
+
+```python
+from portfolio import Portfolio
+example_port = Portfolio()
+example_port.dict()
+```
+
+```python
+# Output
+{'name': None,
+ 'underlyings': {'stocks': {},
+  'options': {},
+  'bonds': {},
+  'portfolios': {},
+  'hedge': {}},
+ 'id_': UUID('60e64398-b5c2-47d1-8a94-4ec1e7053fa3')}
+```
+
+#### Portfolio functions
+There's no option within our portfolio.
+
+```python
+example_port.get_option_book_value()
+# Output 0
+```
+Let's add the call
+```python
+example_port.add_underlying(example_call)
+```
+Now we have one option in the portfolio
+
+
+```python
+len(example_port.underlyings["options"])
+# Output 1
+```
+
+```python
+# compare the ID of the option within the port with example_call
+print(example_port.underlyings["options"].keys())
+print(example_call.id_)
+```
+
+```python
+# Output
+dict_keys([UUID('ad45fecd-e22c-4071-9e28-64799e7fbf78')])
+ad45fecd-e22c-4071-9e28-64799e7fbf78
+```
+
+### 5. Portfolio Greeks <a name="5"></a>
+```python
+print(f"delta:\t {example_port.get_delta()}")
+print(f"gamma:\t {example_port.get_gamma()}")
+print(f"vega:\t {example_port.get_vega()}")
+print(f"rho:\t {example_port.get_rho()}")
+print(f"theta:\t {example_port.get_theta()}")
+print(f"\ngreeks of the option: {example_call.compute_all()}")
+```
+
+```python
+# Output
+delta:	 {'AAPL': 0.3183163677151672}
+gamma:	 0.006740312884853831
+vega:	 0.6558137079380103
+rho:	 0.500148738240813
+theta:	 -0.03380260085006635
+
+greeks of the option: value: 10.249865700985907, delta: 0.3183163677151672, 
+gamma: 0.006740312884853831, vega: 0.6558137079380103, rho: 0.500148738240813,
+theta: -0.03380260085006635
+```
+
+### 6. Delta hedging of the portfolio  <a name="6"></a>
+To delta hedge we'll use stocks, on which the vanilla options are written.
+
+```python
+# this function will loop through the portfolio and add stocks into the hedge part
+example_port.delta_hedge()
+```
+
+```python
+# Output
+-0.0017675405307795765 AAPL added into the hedging part
+```
+
+```python
+# check if a stock has been added into hedge dict
+example_port.underlyings["hedge"]
+```
+
+```python
+# Output
+"{UUID('1d168647-1cf1-400d-b64e-4f6f6f21ca4d'): Stock(way=<Way_stock.long: 'long'>, ticker='AAPL',
+"price=180.08999633789062, quantity=-0.0017675405307795765, id_=UUID('1d168647-1cf1-400d-b64e-4f6f6f21ca4d'), hist...}"
+```
+
+
+
+```python
+# We can also print the delta
+example_port.get_delta()
+# Output {'AAPL': 0.0}
+```
+
+### 7. Market Maker Example <a name="7"></a>
+
+Here's several stocks from the french index CAC40
+
+```python
+example_tickers = ["GLE.PA", "BNP.PA", "MC.PA", "CDI.PA"]
+stocks_list = []
+
+for ticker in example_tickers:
+    temp_stock = Stock(ticker=ticker)
+    stocks_list.append(temp_stock)
+```
+
+
+```python
+# import random functions
+from random import choice, uniform
+```
+
+```python
+ways = [Way_option.call, Way_option.put]
+example_port2 = Portfolio()
+
+# let's write and add 100 options in our portfolio
+for i in range(0,100):
+    temp_stock = choice(stocks_list)
+    temp_option = BlackScholes(way=choice(ways),
+                      S = uniform(temp_stock.price * 0.5,temp_stock.price * 1.5),
+                      K = uniform(temp_stock.price * 0.5,temp_stock.price * 1.5),
+                      T = uniform(0.02, 3.0),
+                      r = uniform(0.01, 0.15),
+                      sigma = uniform(0.1, 0.75),
+                      quantity = uniform(1, 2000),
+                      price = uniform(10, 150),
+                     stock = temp_stock)
+    example_port2.add_underlying(temp_option)
+```
+We have now our list of stocks. Let's write 100 vanilla calls/puts randomly,
+and add these options into the new portfolio
+
+#### Portfolio informations
+
+```python
+print(f"Portfolio option book value:\t{example_port2.get_option_book_value()}")
+print(f"Portfolio delta:\t{example_port2.get_delta()}")
+```
+
+```python
+# Output
+Portfolio option book value:	8559502.004710117
+Portfolio delta:	{'MC.PA': 367904.94572213973, 'GLE.PA': 473878.5910277292,
+'CDI.PA': 486671.67686180724, 'BNP.PA': 637097.4683161988}
+```
+
+### 8. Delta hedging <a name="8"></a>
+
+```python
+example_port2.delta_hedge()
+```
+
+```python
+# Output
+-452.0271958303471 MC.PA added into the hedging part
+-21908.39618187642 GLE.PA added into the hedging part
+-629.1812241264478 CDI.PA added into the hedging part
+-11795.917202652367 BNP.PA added into the hedging part
+```
+
+```python
+example_port2.get_delta()
+```
+
+```python
+# Output
+{'MC.PA': 0.0,
+ 'GLE.PA': 5.820766091346741e-11,
+ 'CDI.PA': -1.1641532182693481e-10,
+ 'BNP.PA': -1.1641532182693481e-10}
+```
+Well done, portfolio is now delta hedged !
+
+
+![](https://media4.giphy.com/media/v1uV0oxObr9ZT48Kpa/giphy.gif?cid=ecf05e47slnfwjrnhjl3fso52ege2siin258wufx748xpf47&ep=v1_gifs_related&rid=giphy.gif&ct=s)
+
